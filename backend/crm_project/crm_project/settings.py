@@ -11,6 +11,7 @@ ALLOWED_HOSTS = [
     "127.0.0.1",
     "localhost",
     "crm-saas-nine.vercel.app",
+    "crm-saas-4bmp.onrender.com",
 ]
 
 # Installed apps
