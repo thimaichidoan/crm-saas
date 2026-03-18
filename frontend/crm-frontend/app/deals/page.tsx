@@ -61,6 +61,7 @@ function getColumnDotClass(stage: Deal["stage"]) {
 
 export default function DealsPage() {
   const [deals, setDeals] = useState<Deal[]>([]);
+  const [editingDeal, setEditingDeal] = useState<Deal | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -87,6 +88,7 @@ export default function DealsPage() {
 
   const handleCreate = async (data: CreateDealPayload) => {
     try {
+      setError("");
       await createDeal(data);
       await loadDeals();
     } catch (err: unknown) {
@@ -99,8 +101,34 @@ export default function DealsPage() {
     }
   };
 
+  const handleUpdate = async (id: number, data: CreateDealPayload) => {
+    try {
+      setError("");
+      await updateDeal(id, data);
+      setEditingDeal(null);
+      await loadDeals();
+    } catch (err: unknown) {
+      console.error(err);
+      const message =
+        err instanceof Error
+          ? err.message
+          : "Erreur lors de la modification de l’opportunité";
+      setError(message);
+    }
+  };
+
+  const handleEdit = (deal: Deal) => {
+    setEditingDeal(deal);
+    setError("");
+  };
+
+  const handleCancelEdit = () => {
+    setEditingDeal(null);
+  };
+
   const handleMove = async (id: number, newStage: Deal["stage"]) => {
     try {
+      setError("");
       await updateDeal(id, { stage: newStage });
       await loadDeals();
     } catch (err: unknown) {
@@ -115,7 +143,13 @@ export default function DealsPage() {
 
   const handleDelete = async (id: number) => {
     try {
+      setError("");
       await deleteDeal(id);
+
+      if (editingDeal?.id === id) {
+        setEditingDeal(null);
+      }
+
       await loadDeals();
     } catch (err: unknown) {
       console.error(err);
@@ -180,21 +214,26 @@ export default function DealsPage() {
         )}
 
         <div className="mt-8">
-          <DealForm onCreate={handleCreate} />
+          <DealForm
+            onCreate={handleCreate}
+            onUpdate={handleUpdate}
+            editingDeal={editingDeal}
+            onCancelEdit={handleCancelEdit}
+          />
         </div>
 
-        <div className="mt-8">
+        <div className="mt-8 overflow-x-auto pb-4">
           {loading ? (
-            <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
+            <div className="flex min-w-max gap-6">
               {Array.from({ length: 6 }).map((_, index) => (
                 <div
                   key={index}
-                  className="h-[420px] animate-pulse rounded-[2rem] border border-gray-200 bg-white"
+                  className="h-[260px] w-[320px] shrink-0 animate-pulse rounded-[2rem] border border-gray-200 bg-white"
                 />
               ))}
             </div>
           ) : (
-            <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
+            <div className="flex min-w-max gap-6">
               {stages.map((stage) => {
                 const dealsByStage = deals.filter((deal) => deal.stage === stage);
                 const totalByStage = dealsByStage.reduce(
@@ -205,18 +244,21 @@ export default function DealsPage() {
                 return (
                   <section
                     key={stage}
-                    className="min-h-[420px] rounded-[2rem] border border-gray-200/80 bg-white/80 p-5 shadow-sm backdrop-blur"
+                    className="w-[320px] shrink-0 rounded-[2rem] border border-gray-200/80 bg-white/90 p-5 shadow-sm backdrop-blur"
                   >
-                    <div className="mb-4">
-                      <div className="mb-2 flex items-center gap-3">
-                        <span
-                          className={`h-3 w-3 rounded-full ${getColumnDotClass(
-                            stage
-                          )}`}
-                        />
-                        <h2 className="text-lg font-bold text-gray-900">
-                          {stageLabels[stage]}
-                        </h2>
+                    <div className="mb-5">
+                      <div className="mb-2 flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-3">
+                          <span
+                            className={`h-3 w-3 rounded-full ${getColumnDotClass(
+                              stage
+                            )}`}
+                          />
+                          <h2 className="text-lg font-bold text-gray-900">
+                            {stageLabels[stage]}
+                          </h2>
+                        </div>
+
                         <span className="rounded-full bg-gray-100 px-3 py-1 text-xs font-semibold text-gray-600">
                           {dealsByStage.length}
                         </span>
@@ -228,17 +270,18 @@ export default function DealsPage() {
                     </div>
 
                     <div className="space-y-4">
-                      {dealsByStage.map((deal) => (
-                        <DealCard
-                          key={deal.id}
-                          deal={deal}
-                          onMove={handleMove}
-                          onDelete={handleDelete}
-                        />
-                      ))}
-
-                      {dealsByStage.length === 0 && (
-                        <div className="rounded-2xl border border-dashed border-gray-300 bg-gray-50 p-6 text-center text-sm text-gray-500">
+                      {dealsByStage.length > 0 ? (
+                        dealsByStage.map((deal) => (
+                          <DealCard
+                            key={deal.id}
+                            deal={deal}
+                            onMove={handleMove}
+                            onDelete={handleDelete}
+                            onEdit={handleEdit}
+                          />
+                        ))
+                      ) : (
+                        <div className="rounded-2xl border border-dashed border-gray-200 bg-gray-50/80 p-8 text-center text-sm text-gray-400">
                           Aucune opportunité
                         </div>
                       )}
