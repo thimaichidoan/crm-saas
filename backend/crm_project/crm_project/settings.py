@@ -6,7 +6,12 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Security
 SECRET_KEY = "django-insecure-y#21v7zoi^ag0ve@%c+4($=yke3(lo&wr)%2*55*30jjtf=!q="
 DEBUG = True
-ALLOWED_HOSTS = []
+
+ALLOWED_HOSTS = [
+    "127.0.0.1",
+    "localhost",
+    "crm-saas-nine.vercel.app",
+]
 
 # Installed apps
 INSTALLED_APPS = [
@@ -104,7 +109,11 @@ AUTH_USER_MODEL = "users.User"
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
-    "https://crm-saas-git-main-thimaichidoans-projects.vercel.app",
+    "https://crm-saas-nine.vercel.app",
+]
+
+CSRF_TRUSTED_ORIGINS = [
+    "https://crm-saas-nine.vercel.app",
 ]
 
 REST_FRAMEWORK = {
