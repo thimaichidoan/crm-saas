@@ -1,41 +1,50 @@
-from rest_framework.views import APIView
+from django.db.models import Sum
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from contacts.models import Contact
 from companies.models import Company
-from leads.models import Lead
+from deals.models import Deal
 from tasks.models import Task
 
 
-class DashboardStatsView(APIView):
-    permission_classes = []
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def stats_view(request):
+    user = request.user
 
-    def get(self, request):
-        total_contacts = Contact.objects.count()
-        total_companies = Company.objects.count()
-        total_leads = Lead.objects.count()
+    total_contacts = Contact.objects.filter(user=user).count()
 
-        new_leads = Lead.objects.filter(status="new").count()
-        progress_leads = Lead.objects.filter(status="progress").count()
-        won_leads = Lead.objects.filter(status="won").count()
-        lost_leads = Lead.objects.filter(status="lost").count()
+    # Company n'a pas de champ user dans ton modèle actuel
+    total_companies = Company.objects.count()
 
-        pending_tasks = Task.objects.filter(completed=False).count()
-        completed_tasks = Task.objects.filter(completed=True).count()
+    total_deals = Deal.objects.filter(owner=user).count()
 
-        conversion_rate = 0
-        if total_leads > 0:
-            conversion_rate = round((won_leads / total_leads) * 100, 2)
+    deals_won = Deal.objects.filter(owner=user, stage="WON").count()
+    deals_lost = Deal.objects.filter(owner=user, stage="LOST").count()
 
-        return Response({
-            "total_contacts": total_contacts,
-            "total_companies": total_companies,
-            "total_leads": total_leads,
-            "new_leads": new_leads,
-            "progress_leads": progress_leads,
-            "won_leads": won_leads,
-            "lost_leads": lost_leads,
-            "pending_tasks": pending_tasks,
-            "completed_tasks": completed_tasks,
-            "conversion_rate": conversion_rate,
-        })
+    conversion_rate = 0
+    if total_deals > 0:
+        conversion_rate = round((deals_won / total_deals) * 100, 2)
+
+    pending_tasks = Task.objects.filter(user=user, completed=False).count()
+    completed_tasks = Task.objects.filter(user=user, completed=True).count()
+
+    revenue = (
+        Deal.objects.filter(owner=user, stage="WON")
+        .aggregate(total=Sum("value"))["total"]
+        or 0
+    )
+
+    return Response({
+        "total_contacts": total_contacts,
+        "total_companies": total_companies,
+        "total_deals": total_deals,
+        "conversion_rate": conversion_rate,
+        "pending_tasks": pending_tasks,
+        "completed_tasks": completed_tasks,
+        "deals_won": deals_won,
+        "deals_lost": deals_lost,
+        "revenue": revenue,
+    })

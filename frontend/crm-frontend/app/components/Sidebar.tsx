@@ -8,8 +8,17 @@ export default function Sidebar() {
   const [isAuth, setIsAuth] = useState(false);
 
   useEffect(() => {
-    const token = localStorage.getItem("access_token");
-    setIsAuth(!!token);
+    const checkAuth = () => {
+      const token = localStorage.getItem("access_token");
+      setIsAuth(!!token);
+    };
+
+    checkAuth();
+    window.addEventListener("focus", checkAuth);
+
+    return () => {
+      window.removeEventListener("focus", checkAuth);
+    };
   }, []);
 
   return (
@@ -21,13 +30,6 @@ export default function Sidebar() {
 
       <nav className="flex flex-1 flex-col justify-between p-4">
         <div className="flex flex-col gap-2">
-          <Link
-            href="/"
-            className="rounded-xl px-4 py-3 font-medium text-gray-800 transition hover:bg-blue-50 hover:text-blue-600"
-          >
-            Accueil
-          </Link>
-
           {isAuth && (
             <>
               <Link
@@ -52,17 +54,24 @@ export default function Sidebar() {
               </Link>
 
               <Link
-                href="/leads"
-                className="rounded-xl px-4 py-3 font-medium text-gray-800 transition hover:bg-blue-50 hover:text-blue-600"
-              >
-                Leads
-              </Link>
-
-              <Link
                 href="/tasks"
                 className="rounded-xl px-4 py-3 font-medium text-gray-800 transition hover:bg-blue-50 hover:text-blue-600"
               >
                 Tâches
+              </Link>
+
+              <Link
+                href="/deals"
+                className="rounded-xl px-4 py-3 font-medium text-gray-800 transition hover:bg-blue-50 hover:text-blue-600"
+              >
+                Deals
+              </Link>
+
+              <Link
+                href="/emailing"
+                className="rounded-xl px-4 py-3 font-medium text-gray-800 transition hover:bg-blue-50 hover:text-blue-600"
+              >
+                Emailing
               </Link>
             </>
           )}

@@ -1,9 +1,28 @@
-from rest_framework import viewsets
+from rest_framework import viewsets, filters
+from rest_framework.permissions import IsAuthenticated
+
 from .models import Contact
 from .serializers import ContactSerializer
 
+
 class ContactViewSet(viewsets.ModelViewSet):
-    queryset = Contact.objects.all().order_by("-created_at")
     serializer_class = ContactSerializer
-    search_fields = ["first_name", "last_name", "email", "phone"]
-    ordering_fields = ["created_at", "last_name", "first_name"]
+    permission_classes = [IsAuthenticated]
+    filter_backends = [filters.SearchFilter, filters.OrderingFilter]
+    search_fields = [
+        "first_name",
+        "last_name",
+        "email",
+        "phone",
+        "notes",
+        "company__name",
+        "contact_type",
+    ]
+    ordering_fields = ["id", "first_name", "last_name", "created_at"]
+    ordering = ["-id"]
+
+    def get_queryset(self):
+        return Contact.objects.filter(user=self.request.user).order_by("-id")
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
